@@ -5,16 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>ZenithX Player</title>
     
-    <!-- PWA Manifest -->
+    <!-- PWA Manifest & Theme Color -->
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#1e293b">
 
-    <!-- Stylesheets -->
+    <!-- Stylesheets and Fonts -->
     <link rel="stylesheet" href="/styles.css">
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- Netlify Identity Widget -->
+    <!-- Netlify Identity Widget for User Login -->
     <script type="text/javascript" src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 </head>
 <body class="bg-background text-color">
@@ -36,8 +37,22 @@
 
     <!-- Main Application Logic -->
     <script src="/app.js"></script>
+    
     <!-- YouTube IFrame Player API -->
     <script src="https://www.youtube.com/iframe_api"></script>
+
+    <!-- PWA Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js').then(registration => {
+                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                }, err => {
+                    console.log('ServiceWorker registration failed: ', err);
+                });
+            });
+        }
+    </script>
 </body>
 </html>
 
