@@ -1,12 +1,14 @@
-# This file tells Netlify how to build your site.
+# This file tells Netlify how to build and serve your site.
 
 [build]
-  # The folder that contains your final website files (HTML, CSS, JS, etc.)
+  # The folder that contains your final website files.
   publish = "public"
   # The folder where your serverless functions are located.
   functions = "netlify/functions"
 
+# This rule ensures that your single-page app works correctly.
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+
