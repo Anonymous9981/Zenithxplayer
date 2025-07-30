@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>ZenithX Player</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#1e293b">
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="/styles.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Netlify Identity Widget -->
+    <script type="text/javascript" src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+</head>
+<body class="bg-background text-color">
+
+    <div id="app" class="max-w-md mx-auto h-screen flex flex-col antialiased">
+        <!-- Main Content Area (will be populated by JS) -->
+        <main class="flex-grow p-4 overflow-y-auto"></main>
+
+        <!-- Player Controls (will be populated by JS) -->
+        <footer class="bg-card p-4 border-t border-color shadow-custom"></footer>
+
+        <!-- Navigation Bar (will be populated by JS) -->
+        <nav class="bg-card border-t border-color flex justify-around p-2"></nav>
+    </div>
+
+    <!-- Modals and Hidden Elements -->
+    <div id="song-options-modal" class="hidden"></div>
+    <div id="player" class="hidden"></div>
+
+    <!-- Main Application Logic -->
+    <script src="/app.js"></script>
+    <!-- YouTube IFrame Player API -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+</body>
+</html>
+
