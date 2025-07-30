@@ -1,0 +1,12 @@
+# This file tells Netlify how to build your site.
+
+[build]
+  # The folder that contains your final website files (HTML, CSS, JS, etc.)
+  publish = "public"
+  # The folder where your serverless functions are located.
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
