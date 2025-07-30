@@ -1,0 +1,89 @@
+:root {
+    --primary-color: #3B82F6;
+    --background-color: #f0f2f5;
+    --text-color: #1F2937;
+    --card-background: #ffffff;
+    --border-color: #E5E7EB;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+}
+
+.dark-theme {
+    --primary-color: #60A5FA;
+    --background-color: #0f172a;
+    --text-color: #e2e8f0;
+    --card-background: #1e293b;
+    --border-color: #334155;
+    --shadow-color: rgba(0, 0, 0, 0.2);
+}
+
+.anime-theme {
+    --primary-color: #f472b6;
+    --background-color: #fdf2f8;
+    --text-color: #831843;
+    --card-background: #fce7f3;
+    --border-color: #f9a8d4;
+    --shadow-color: rgba(244, 114, 182, 0.1);
+}
+
+.game-theme {
+    --primary-color: #8b5cf6;
+    --background-color: #1e1b4b;
+    --text-color: #e0e7ff;
+    --card-background: #312e81;
+    --border-color: #4f46e5;
+    --shadow-color: rgba(139, 92, 246, 0.2);
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    transition: background-color 0.5s, color 0.5s;
+    overscroll-behavior-y: contain;
+}
+
+.bg-background { background-color: var(--background-color); }
+.text-color { color: var(--text-color); }
+.bg-card { background-color: var(--card-background); }
+.border-color { border-color: var(--border-color); }
+.primary-color { color: var(--primary-color); }
+.bg-primary { background-color: var(--primary-color); }
+.shadow-custom { box-shadow: 0 4px 12px var(--shadow-color); }
+
+.progress-bar-container { height: 4px; background-color: var(--border-color); border-radius: 2px; cursor: pointer; }
+.progress-bar { height: 100%; background-color: var(--primary-color); border-radius: 2px; width: 0%; }
+.hidden { display: none; }
+
+.glass-logo {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.modal-backdrop {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 40;
+}
+.modal-content {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    z-index: 50;
+    border-top-left-radius: 1.5rem; border-top-right-radius: 1.5rem;
+    padding: 1.5rem;
+    animation: slide-up 0.3s ease-out;
+}
+@keyframes slide-up {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+
+/* Drag and Drop Styling */
+.draggable {
+    cursor: grab;
+}
+.dragging {
+    opacity: 0.5;
+    background: var(--primary-color);
+}
+
