@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZenithX Player</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #3B82F6;
+            --background-color: #ffffff;
+            --text-color: #1F2937;
+            --card-background: #F9FAFB;
+            --border-color: #E5E7EB;
+        }
+
+        .dark-theme {
+            --primary-color: #60A5FA;
+            --background-color: #111827;
+            --text-color: #F9FAFB;
+            --card-background: #1F2937;
+            --border-color: #374151;
+        }
+        
+        .anime-theme {
+            --primary-color: #F472B6;
+            --background-color: #FDF2F8;
+            --text-color: #831843;
+            --card-background: #FCE7F3;
+            --border-color: #F9A8D4;
+        }
+
+        .game-theme {
+            --primary-color: #8B5CF6;
+            --background-color: #1E1B4B;
+            --text-color: #E0E7FF;
+            --card-background: #312E81;
+            --border-color: #4F46E5;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .bg-background { background-color: var(--background-color); }
+        .text-color { color: var(--text-color); }
+        .bg-card { background-color: var(--card-background); }
+        .border-color { border-color: var(--border-color); }
+        .primary-color { color: var(--primary-color); }
+        .bg-primary { background-color: var(--primary-color); }
+
+        .progress-bar-container {
+            height: 4px;
+            background-color: var(--border-color);
+            border-radius: 2px;
+            cursor: pointer;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background-color: var(--primary-color);
+            border-radius: 2px;
+            width: 0%;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-background text-color">
+
+    <div id="app" class="max-w-md mx-auto h-screen flex flex-col">
+
+        <!-- Main Content -->
+        <main id="home-screen" class="flex-grow p-4 overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-2xl font-bold">ZenithX Player</h1>
+                <div id="theme-selector" class="flex space-x-2">
+                    <button onclick="changeTheme('light')" class="w-6 h-6 bg-white rounded-full border-2 border-gray-300"></button>
+                    <button onclick="changeTheme('dark')" class="w-6 h-6 bg-gray-800 rounded-full"></button>
+                    <button onclick="changeTheme('anime')" class="w-6 h-6 bg-pink-200 rounded-full"></button>
+                    <button onclick="changeTheme('game')" class="w-6 h-6 bg-indigo-800 rounded-full"></button>
+                </div>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="mb-6">
+                <input id="search-input" type="text" placeholder="Search for songs..." class="w-full p-3 rounded-lg bg-card border-2 border-color focus:outline-none focus:border-primary transition">
+                <button id="search-button" class="w-full mt-2 p-3 bg-primary text-white rounded-lg font-semibold hover:opacity-90 transition">Search</button>
+            </div>
+
+            <!-- Search Results -->
+            <div id="search-results" class="space-y-3">
+                <!-- Search results will be dynamically inserted here -->
+            </div>
+        </main>
+        
+        <main id="playlist-screen" class="flex-grow p-4 overflow-y-auto hidden">
+            <h1 class="text-2xl font-bold mb-6">My Playlist</h1>
+            <div id="playlist-container" class="space-y-3">
+                <!-- Playlist items will be dynamically inserted here -->
+            </div>
+        </main>
+
+        <main id="settings-screen" class="flex-grow p-4 overflow-y-auto hidden">
+            <h1 class="text-2xl font-bold mb-6">Settings</h1>
+            <div class="bg-card p-4 rounded-lg">
+                <p>ZenithX Player v1.0</p>
+                <p class="text-sm opacity-70 mt-2">Designed for a seamless mobile streaming experience.</p>
+            </div>
+        </main>
+
+
+        <!-- Player Controls -->
+        <footer class="bg-card p-4 border-t border-color">
+            <div class="flex items-center mb-3">
+                <img id="current-song-thumbnail" src="https://placehold.co/60x60/3B82F6/FFFFFF?text=ZX" class="w-14 h-14 rounded-lg mr-4">
+                <div>
+                    <p id="current-song-title" class="font-semibold">No song playing</p>
+                    <p id="current-song-artist" class="text-sm opacity-70">Select a song to start</p>
+                </div>
+            </div>
+            <div class="progress-bar-container mb-3" id="progress-container">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+            <div class="flex justify-between items-center text-xs opacity-70 mb-3">
+                <span id="current-time">0:00</span>
+                <span id="duration">0:00</span>
+            </div>
+            <div class="flex justify-center items-center space-x-6">
+                <button id="prev-button" class="p-2">
+                    <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20"><path d="M8.445 14.832A1 1 0 0010 14.03V5.969a1 1 0 00-1.555-.832L4.12 9.168a1 1 0 000 1.664l4.325 4.031zM15.88 9.168a1 1 0 000 1.664l4.324 4.031A1 1 0 0021 14.03V5.969a1 1 0 00-1.555-.832L15.88 9.168z" clip-rule="evenodd" fill-rule="evenodd"></path></svg>
+                </button>
+                <button id="play-pause-button" class="p-4 bg-primary text-white rounded-full shadow-lg">
+                    <svg id="play-icon" class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20"><path d="M4.018 15.443A1 1 0 005 15.999V4.001a1 1 0 00-1.555-.832L.12 7.168a1 1 0 000 1.664l3.898 4.03zM10.88 7.168a1 1 0 000 1.664l3.898 4.03a1 1 0 001.555-.832V4.001a1 1 0 00-1.555-.832L10.88 7.168z" clip-rule="evenodd" fill-rule="evenodd"></path></svg>
+                    <svg id="pause-icon" class="w-8 h-8 hidden" fill="currentColor" viewBox="0 0 20 20"><path d="M5 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10 0a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1z"></path></svg>
+                </button>
+                <button id="next-button" class="p-2">
+                    <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20"><path d="M11.555 5.168A1 1 0 0010 5.969v8.062a1 1 0 001.555.832l4.325-4.031a1 1 0 000-1.664L11.555 5.168zM4.12 9.168a1 1 0 000 1.664l4.324 4.031A1 1 0 0010 14.03V5.969a1 1 0 00-1.555-.832L4.12 9.168z" clip-rule="evenodd" fill-rule="evenodd"></path></svg>
+                </button>
+            </div>
+        </footer>
+
+        <!-- Navigation Bar -->
+        <nav class="bg-card border-t border-color flex justify-around p-2">
+            <button onclick="showScreen('home-screen')" class="p-2 primary-color">Home</button>
+            <button onclick="showScreen('playlist-screen')" class="p-2 text-color">Playlist</button>
+            <button onclick="showScreen('settings-screen')" class="p-2 text-color">Settings</button>
+        </nav>
+    </div>
+
+    <!-- YouTube IFrame Player -->
+    <div id="player" class="hidden"></div>
+    
+    <script>
+        // --- THEME ---
+        function changeTheme(theme) {
+            const body = document.body;
+            body.className = 'bg-background text-color'; // Reset classes
+            if (theme === 'dark') body.classList.add('dark-theme');
+            if (theme === 'anime') body.classList.add('anime-theme');
+            if (theme === 'game') body.classList.add('game-theme');
+        }
+
+        // --- NAVIGATION ---
+        function showScreen(screenId) {
+            document.getElementById('home-screen').classList.add('hidden');
+            document.getElementById('playlist-screen').classList.add('hidden');
+            document.getElementById('settings-screen').classList.add('hidden');
+            document.getElementById(screenId).classList.remove('hidden');
+
+            document.querySelectorAll('nav button').forEach(button => {
+                button.classList.remove('primary-color');
+                button.classList.add('text-color');
+            });
+            event.target.classList.add('primary-color');
+            event.target.classList.remove('text-color');
+        }
+
+        // --- YOUTUBE API ---
+        let player;
+        let playlist = [];
+        let currentSongIndex = -1;
+        
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                height: '0',
+                width: '0',
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
+
+        function onPlayerReady(event) {
+            // Player is ready
+        }
+
+        function onPlayerStateChange(event) {
+            if (event.data === YT.PlayerState.ENDED) {
+                playNextSong(true); // Autoplay related song
+            }
+        }
+
+        // --- PLAYER LOGIC ---
+        const playPauseButton = document.getElementById('play-pause-button');
+        const playIcon = document.getElementById('play-icon');
+        const pauseIcon = document.getElementById('pause-icon');
+        const prevButton = document.getElementById('prev-button');
+        const nextButton = document.getElementById('next-button');
+        const progressBar = document.getElementById('progress-bar');
+        const progressContainer = document.getElementById('progress-container');
+        const currentTimeEl = document.getElementById('current-time');
+        const durationEl = document.getElementById('duration');
+
+        playPauseButton.addEventListener('click', togglePlayPause);
+        prevButton.addEventListener('click', () => playPreviousSong());
+        nextButton.addEventListener('click', () => playNextSong(false));
+
+        function togglePlayPause() {
+            if (!player || typeof player.getPlayerState !== 'function') return;
+            const playerState = player.getPlayerState();
+            if (playerState === YT.PlayerState.PLAYING) {
+                player.pauseVideo();
+                playIcon.classList.remove('hidden');
+                pauseIcon.classList.add('hidden');
+            } else {
+                player.playVideo();
+                playIcon.classList.add('hidden');
+                pauseIcon.classList.remove('hidden');
+            }
+        }
+
+        function playSong(video) {
+            if (!player || typeof player.loadVideoById !== 'function') return;
+            player.loadVideoById(video.id.videoId);
+            updatePlayerUI(video);
+            currentSongIndex = playlist.findIndex(item => item.id.videoId === video.id.videoId);
+            if (currentSongIndex === -1) {
+                 playlist.push(video);
+                 currentSongIndex = playlist.length - 1;
+                 renderPlaylist();
+            }
+            togglePlayPause();
+        }
+
+        function playNextSong(isAutoplay = false) {
+            if (isAutoplay && currentSongIndex !== -1) {
+                searchRelated(playlist[currentSongIndex].id.videoId);
+            } else if (playlist.length > 0) {
+                currentSongIndex = (currentSongIndex + 1) % playlist.length;
+                playSong(playlist[currentSongIndex]);
+            }
+        }
+        
+        function playPreviousSong() {
+            if (playlist.length > 0) {
+                currentSongIndex = (currentSongIndex - 1 + playlist.length) % playlist.length;
+                playSong(playlist[currentSongIndex]);
+            }
+        }
+
+        function updatePlayerUI(video) {
+            document.getElementById('current-song-thumbnail').src = video.snippet.thumbnails.default.url;
+            document.getElementById('current-song-title').textContent = video.snippet.title;
+            document.getElementById('current-song-artist').textContent = video.snippet.channelTitle;
+        }
+
+        setInterval(() => {
+            if (player && typeof player.getCurrentTime === 'function') {
+                const currentTime = player.getCurrentTime();
+                const duration = player.getDuration();
+                if (duration > 0) {
+                    progressBar.style.width = (currentTime / duration) * 100 + '%';
+                    currentTimeEl.textContent = formatTime(currentTime);
+                    durationEl.textContent = formatTime(duration);
+                }
+            }
+        }, 1000);
+
+        progressContainer.addEventListener('click', (e) => {
+            if (player && typeof player.seekTo === 'function') {
+                const bounds = e.target.getBoundingClientRect();
+                const x = e.clientX - bounds.left;
+                const width = e.target.clientWidth;
+                const duration = player.getDuration();
+                if (duration > 0) {
+                    player.seekTo((x/width) * duration);
+                }
+            }
+        });
+        
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+
+        // --- SEARCH & PLAYLIST (SECURE FUNCTIONS) ---
+        const searchInput = document.getElementById('search-input');
+        const searchButton = document.getElementById('search-button');
+        const searchResultsContainer = document.getElementById('search-results');
+        const playlistContainer = document.getElementById('playlist-container');
+
+        searchButton.addEventListener('click', searchSongs);
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') searchSongs();
+        });
+
+        async function searchSongs() {
+            const query = searchInput.value;
+            if (!query) return;
+
+            try {
+                // Call our own Netlify function endpoint
+                const response = await fetch(`/.netlify/functions/youtube?q=${encodeURIComponent(query)}`);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+                displaySearchResults(data.items);
+            } catch (error) {
+                console.error("Error fetching search results:", error);
+                searchResultsContainer.innerHTML = `<p class="text-center opacity-70">Could not fetch results. Please try again later.</p>`;
+            }
+        }
+        
+        async function searchRelated(videoId) {
+            try {
+                // Call our own Netlify function endpoint
+                const response = await fetch(`/.netlify/functions/youtube?relatedToVideoId=${videoId}`);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+                if (data.items && data.items.length > 0) {
+                    playSong(data.items[0]);
+                }
+            } catch (error) {
+                console.error("Error fetching related video:", error);
+            }
+        }
+
+        function displaySearchResults(videos) {
+            if (!videos || videos.length === 0) {
+                searchResultsContainer.innerHTML = `<p class="text-center opacity-70">No results found.</p>`;
+                return;
+            }
+
+            searchResultsContainer.innerHTML = '';
+            videos.forEach(video => {
+                const videoElement = document.createElement('div');
+                videoElement.className = 'flex items-center p-3 bg-card rounded-lg cursor-pointer hover:bg-border-color transition';
+                videoElement.innerHTML = `
+                    <img src="${video.snippet.thumbnails.default.url}" class="w-12 h-12 rounded-md mr-4">
+                    <div class="flex-grow">
+                        <p class="font-semibold">${video.snippet.title}</p>
+                        <p class="text-sm opacity-70">${video.snippet.channelTitle}</p>
+                    </div>
+                    <button class="add-to-playlist p-2 text-primary">+</button>
+                `;
+                videoElement.addEventListener('click', (e) => {
+                    if(!e.target.classList.contains('add-to-playlist')) {
+                        playSong(video);
+                    }
+                });
+                videoElement.querySelector('.add-to-playlist').addEventListener('click', () => addToPlaylist(video));
+                searchResultsContainer.appendChild(videoElement);
+            });
+        }
+
+        function addToPlaylist(video) {
+            if (!playlist.some(item => item.id.videoId === video.id.videoId)) {
+                playlist.push(video);
+                renderPlaylist();
+            }
+        }
+
+        function renderPlaylist() {
+            playlistContainer.innerHTML = '';
+            playlist.forEach((video, index) => {
+                const videoElement = document.createElement('div');
+                videoElement.className = 'flex items-center p-3 bg-card rounded-lg cursor-pointer hover:bg-border-color transition';
+                videoElement.innerHTML = `
+                    <img src="${video.snippet.thumbnails.default.url}" class="w-12 h-12 rounded-md mr-4">
+                    <div>
+                        <p class="font-semibold">${video.snippet.title}</p>
+                        <p class="text-sm opacity-70">${video.snippet.channelTitle}</p>
+                    </div>
+                `;
+                videoElement.addEventListener('click', () => {
+                    currentSongIndex = index;
+                    playSong(playlist[currentSongIndex]);
+                });
+                playlistContainer.appendChild(videoElement);
+            });
+        }
+
+        // Load YouTube IFrame Player API
+        var tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        var firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+    </script>
+</body>
+</html>
+
