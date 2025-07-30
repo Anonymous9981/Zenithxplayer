@@ -79,11 +79,6 @@ body {
 }
 
 /* Drag and Drop Styling */
-.draggable {
-    cursor: grab;
-}
-.dragging {
-    opacity: 0.5;
-    background: var(--primary-color);
-}
+.draggable { cursor: grab; }
+.dragging { opacity: 0.5; background: var(--border-color); }
 
