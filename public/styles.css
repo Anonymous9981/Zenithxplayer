@@ -78,7 +78,17 @@ body {
     to { transform: translateY(0); }
 }
 
-/* Drag and Drop Styling */
-.draggable { cursor: grab; }
-.dragging { opacity: 0.5; background: var(--border-color); }
+/* New styles for desktop layout */
+.main-grid {
+    display: grid;
+    grid-template-columns: 1fr; /* Mobile: single column */
+    grid-template-rows: 1fr auto; /* Content and nav */
+    height: 100vh;
+}
 
+@media (min-width: 768px) { /* md breakpoint */
+    .main-grid {
+        grid-template-columns: 240px 1fr; /* Desktop: sidebar and main content */
+        grid-template-rows: 1fr; /* Single row */
+    }
+}
