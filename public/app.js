@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- GLOBAL STATE MANAGEMENT ---
     const G_STATE = {
         ytPlayer: null,
+        isPlayerReady: false, // NEW: Track if the YouTube player is ready
         queue: [],
         likedSongs: [],
         currentSongIndex: -1,
@@ -265,9 +266,16 @@ document.addEventListener('DOMContentLoaded', () => {
     window.onYouTubeIframeAPIReady = () => {
         G_STATE.ytPlayer = new YT.Player('player', {
             height: '0', width: '0',
-            events: { 'onStateChange': onPlayerStateChange }
+            events: { 
+                'onReady': onPlayerReady,
+                'onStateChange': onPlayerStateChange 
+            }
         });
     };
+
+    function onPlayerReady(event) {
+        G_STATE.isPlayerReady = true;
+    }
 
     function onPlayerStateChange(event) {
         if (event.data === YT.PlayerState.PLAYING) updatePlayPauseIcon(true);
@@ -277,10 +285,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function playSong(video, indexInQueue) {
         if (!G_STATE.ytPlayer || typeof G_STATE.ytPlayer.loadVideoById !== 'function') return;
-        G_STATE.ytPlayer.loadVideoById(video.id.videoId);
-        G_STATE.currentSongIndex = indexInQueue;
-        G_STATE.ytPlayer.playVideo();
-        renderFooter();
+        
+        // FIX: Wait for the player to be ready before loading a video
+        const loadAndPlay = () => {
+            G_STATE.ytPlayer.loadVideoById(video.id.videoId);
+            G_STATE.currentSongIndex = indexInQueue;
+            G_STATE.ytPlayer.playVideo();
+            renderFooter();
+        };
+
+        if (G_STATE.isPlayerReady) {
+            loadAndPlay();
+        } else {
+            // If player isn't ready, wait for the onReady event to fire
+            G_STATE.ytPlayer.addEventListener('onReady', loadAndPlay);
+        }
     }
 
     function togglePlayPause() {
