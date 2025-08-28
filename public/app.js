@@ -1,4 +1,3 @@
-// Wait for the entire HTML document to be loaded and parsed
 document.addEventListener('DOMContentLoaded', () => {
     // --- GLOBAL STATE MANAGEMENT ---
     const G_STATE = {
@@ -511,4 +510,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         closeModal();
     }
+
+    // Initial call to render the application
+    renderUI();
 });
