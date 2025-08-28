@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- GLOBAL STATE MANAGEMENT ---
     const G_STATE = {
         ytPlayer: null,
-        isPlayerReady: false, // NEW: Track if the YouTube player is ready
+        isPlayerReady: false,
         queue: [],
         likedSongs: [],
         currentSongIndex: -1,
@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
         activeScreen: 'home'
     };
 
-    // --- DOM ELEMENTS (Defined AFTER DOM is loaded) ---
+    // --- DOM ELEMENT ---
     const appContainer = document.getElementById('app-container');
 
     // --- AUTHENTICATION (NETLIFY IDENTITY) ---
@@ -286,7 +286,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function playSong(video, indexInQueue) {
         if (!G_STATE.ytPlayer || typeof G_STATE.ytPlayer.loadVideoById !== 'function') return;
         
-        // FIX: Wait for the player to be ready before loading a video
         const loadAndPlay = () => {
             G_STATE.ytPlayer.loadVideoById(video.id.videoId);
             G_STATE.currentSongIndex = indexInQueue;
@@ -297,7 +296,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (G_STATE.isPlayerReady) {
             loadAndPlay();
         } else {
-            // If player isn't ready, wait for the onReady event to fire
             G_STATE.ytPlayer.addEventListener('onReady', loadAndPlay);
         }
     }
@@ -310,8 +308,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updatePlayPauseIcon(isPlaying) {
-        document.getElementById('play-icon')?.classList.toggle('hidden', isPlaying);
-        document.getElementById('pause-icon')?.classList.toggle('hidden', !isPlaying);
+        const playIcon = document.getElementById('play-icon');
+        const pauseIcon = document.getElementById('pause-icon');
+        if (playIcon) playIcon.classList.toggle('hidden', isPlaying);
+        if (pauseIcon) pauseIcon.classList.toggle('hidden', !isPlaying);
     }
 
     function playNextSong(isAutoplay = false) {
