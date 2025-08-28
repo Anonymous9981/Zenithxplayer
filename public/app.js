@@ -409,4 +409,102 @@ document.addEventListener('DOMContentLoaded', () => {
             G_STATE.queue.splice(newIndex, 0, video);
             playSong(video, newIndex);
             saveData('queue');
-            if (G_STATE.activeScreen 
+            if (G_STATE.activeScreen === 'queue') renderQueue();
+        }
+    }
+
+    // --- QUEUE & LIKED SONGS ---
+    function renderQueue() {
+        const container = document.getElementById('queue-container');
+        if (!container) return;
+        if (G_STATE.queue.length === 0) {
+            container.innerHTML = `<p class="text-center opacity-70">Your queue is empty.</p>`;
+            return;
+        }
+        container.innerHTML = G_STATE.queue.map((video, index) => getSongItemHTML(video, 'queue')).join('');
+        container.querySelectorAll('.song-item').forEach((item, index) => {
+            const videoData = JSON.parse(item.dataset.video);
+            item.querySelector('.song-info').addEventListener('click', () => playSong(videoData, index));
+            item.querySelector('.remove-btn').addEventListener('click', () => removeFromQueue(index));
+        });
+    }
+
+    function removeFromQueue(index) {
+        G_STATE.queue.splice(index, 1);
+        if (index === G_STATE.currentSongIndex) {
+            G_STATE.ytPlayer.stopVideo();
+            G_STATE.currentSongIndex = -1;
+            renderFooter();
+        } else if (index < G_STATE.currentSongIndex) {
+            G_STATE.currentSongIndex--;
+        }
+        renderQueue();
+        saveData('queue');
+    }
+
+    function renderLikedSongs() {
+        const container = document.getElementById('liked-songs-container');
+        if (!container) return;
+        if (G_STATE.likedSongs.length === 0) {
+            container.innerHTML = `<p class="text-center opacity-70">You haven't liked any songs yet.</p>`;
+            return;
+        }
+        container.innerHTML = G_STATE.likedSongs.map(video => getSongItemHTML(video, 'liked')).join('');
+        container.querySelectorAll('.song-item').forEach(item => {
+            const videoData = JSON.parse(item.dataset.video);
+            item.querySelector('.song-info').addEventListener('click', () => handleSongClick(videoData));
+            item.querySelector('.options-btn').addEventListener('click', () => openModal(videoData));
+        });
+    }
+
+    function toggleLike() {
+        const song = G_STATE.queue[G_STATE.currentSongIndex];
+        if (!song || !G_STATE.user) return;
+        const indexInLiked = G_STATE.likedSongs.findIndex(s => s.id.videoId === song.id.videoId);
+        if (indexInLiked !== -1) {
+            G_STATE.likedSongs.splice(indexInLiked, 1);
+        } else {
+            G_STATE.likedSongs.unshift(song);
+        }
+        saveData('likedSongs');
+        renderFooter();
+        if (G_STATE.activeScreen === 'liked') renderLikedSongs();
+    }
+
+    // --- MODAL ---
+    function openModal(video) {
+        G_STATE.songForModal = video;
+        modalContainer.classList.remove('hidden');
+        modalContainer.innerHTML = `
+            <div class="modal-backdrop"></div>
+            <div class="modal-content bg-card">
+                <h3 class="text-lg font-bold mb-4 truncate">${video.snippet.title}</h3>
+                <button id="modal-add-to-queue" class="w-full text-left p-3 rounded-lg hover:bg-border-color transition flex items-center space-x-3">
+                    <i class="fas fa-plus"></i><span>Add to Queue</span>
+                </button>
+                <button id="modal-cancel" class="w-full text-left p-3 mt-2 rounded-lg hover:bg-border-color transition flex items-center space-x-3">
+                    <i class="fas fa-times"></i><span>Cancel</span>
+                </button>
+            </div>`;
+        modalContainer.querySelector('.modal-backdrop').addEventListener('click', closeModal);
+        modalContainer.querySelector('#modal-cancel').addEventListener('click', closeModal);
+        modalContainer.querySelector('#modal-add-to-queue').addEventListener('click', addToQueue);
+    }
+
+    function closeModal() {
+        modalContainer.classList.add('hidden');
+        G_STATE.songForModal = null;
+    }
+
+    function addToQueue() {
+        if (G_STATE.songForModal && !G_STATE.queue.some(item => item.id.videoId === G_STATE.songForModal.id.videoId)) {
+            G_STATE.queue.push(G_STATE.songForModal);
+            saveData('queue');
+            if (G_STATE.activeScreen === 'queue') renderQueue();
+        }
+        closeModal();
+    }
+
+    // Initial call to render the application
+    renderUI();
+});
