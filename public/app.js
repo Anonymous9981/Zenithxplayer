@@ -1,3 +1,4 @@
+// Wait for the entire HTML document to be loaded and parsed
 document.addEventListener('DOMContentLoaded', () => {
     // --- GLOBAL STATE MANAGEMENT ---
     const G_STATE = {
@@ -11,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
         activeScreen: 'home'
     };
 
-    // --- DOM ELEMENTS ---
+    // --- DOM ELEMENTS (Defined AFTER DOM is loaded) ---
     const mainContent = document.querySelector('main');
     const footer = document.querySelector('footer');
     const nav = document.querySelector('nav');
@@ -79,6 +80,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- CORE APP RENDERING ---
     function renderUI() {
+        // Add checks to ensure elements exist before manipulating them
+        if (!mainContent || !footer || !nav) {
+            console.error("Core UI elements not found!");
+            return;
+        }
+
         if (G_STATE.user) {
             // User is logged in, show the full app
             nav.classList.remove('hidden');
@@ -504,7 +511,4 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         closeModal();
     }
-
-    // Initial call to render the application
-    renderUI();
 });
