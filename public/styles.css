@@ -78,6 +78,10 @@ body {
     to { transform: translateY(0); }
 }
 
+/* Drag and Drop Styling */
+.draggable { cursor: grab; }
+.dragging { opacity: 0.5; background: var(--border-color); }
+
 /* New styles for desktop layout */
 .main-grid {
     display: grid;
