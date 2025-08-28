@@ -1,3 +1,4 @@
+// Wait for the entire HTML document to be loaded and parsed before running any script
 document.addEventListener('DOMContentLoaded', () => {
     // --- GLOBAL STATE MANAGEMENT ---
     const G_STATE = {
@@ -12,10 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- DOM ELEMENTS (Defined AFTER DOM is loaded) ---
-    const mainContent = document.querySelector('main');
-    const footer = document.querySelector('footer');
-    const nav = document.querySelector('nav');
-    const modalContainer = document.getElementById('song-options-modal');
+    const appContainer = document.getElementById('app-container');
 
     // --- AUTHENTICATION (NETLIFY IDENTITY) ---
     const identity = window.netlifyIdentity;
@@ -79,24 +77,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- CORE APP RENDERING ---
     function renderUI() {
-        // Add checks to ensure elements exist before manipulating them
-        if (!mainContent || !footer || !nav) {
-            console.error("Core UI elements not found!");
-            return;
-        }
-
         if (G_STATE.user) {
-            // User is logged in, show the full app
-            nav.classList.remove('hidden');
-            footer.classList.remove('hidden');
-            renderFooter();
+            // User is logged in, build and show the full app
+            appContainer.innerHTML = `
+                <div id="app" class="relative h-screen w-screen flex flex-col md:flex-row overflow-hidden">
+                    <nav class="bg-card md:w-60 md:flex-shrink-0 md:border-r md:border-color p-2 md:p-4 flex flex-row justify-around md:flex-col md:justify-start order-last md:order-first"></nav>
+                    <div class="flex-grow flex flex-col min-w-0">
+                        <main class="flex-grow p-4 overflow-y-auto pb-24 md:pb-0"></main>
+                        <footer class="bg-card p-4 border-t border-color shadow-custom fixed bottom-0 left-0 right-0 md:relative"></footer>
+                    </div>
+                </div>
+                <div id="song-options-modal" class="hidden"></div>
+            `;
             renderNav();
-            showScreen('home'); // Always start on home screen after login
+            renderFooter();
+            showScreen('home');
         } else {
-            // User is logged out, show the login screen
-            nav.classList.add('hidden');
-            footer.classList.add('hidden');
-            mainContent.innerHTML = getLoginScreenHTML();
+            // User is logged out, show only the login screen
+            appContainer.innerHTML = getLoginScreenHTML();
             document.getElementById('login-button').addEventListener('click', () => identity.open());
         }
     }
@@ -104,6 +102,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- SCREEN MANAGEMENT & HTML TEMPLATES ---
     function showScreen(screenId) {
         G_STATE.activeScreen = screenId;
+        const mainContent = document.querySelector('main');
+        if (!mainContent) return; // Guard against null element
         const templates = {
             home: getHomeScreenHTML,
             queue: getQueueScreenHTML,
@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function getLoginScreenHTML() {
         return `
-            <div class="flex flex-col items-center justify-center h-full text-center p-4">
+            <div class="flex flex-col items-center justify-center h-screen text-center p-4">
                 <div class="w-24 h-24 rounded-3xl glass-logo flex items-center justify-center mb-6">
                     <i class="fa-solid fa-headphones-simple text-5xl text-white"></i>
                 </div>
@@ -168,6 +168,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- UI COMPONENTS ---
     function renderFooter() {
+        const footer = document.querySelector('footer');
+        if (!footer) return;
         const currentSong = G_STATE.queue[G_STATE.currentSongIndex];
         const isLiked = currentSong && G_STATE.likedSongs.some(s => s.id.videoId === currentSong.id.videoId);
         footer.innerHTML = `
@@ -196,17 +198,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderNav() {
+        const nav = document.querySelector('nav');
+        if (!nav) return;
         const navItems = [
             { id: 'home', icon: 'home', label: 'Home' },
             { id: 'queue', icon: 'list-music', label: 'Queue' },
             { id: 'liked', icon: 'heart', label: 'Liked' },
             { id: 'profile', icon: 'user', label: 'Profile' }
         ];
-        nav.innerHTML = navItems.map(item => `
-            <button data-screen="${item.id}" class="${G_STATE.activeScreen === item.id ? 'primary-color' : 'text-color'} p-2 flex flex-col items-center space-y-1 w-1/4">
-                <i class="fas fa-${item.icon}"></i><span>${item.label}</span>
-            </button>
-        `).join('');
+        nav.innerHTML = `
+            <div class="hidden md:flex items-center space-x-3 mb-8">
+                <div class="w-10 h-10 rounded-xl glass-logo flex items-center justify-center">
+                    <i class="fa-solid fa-headphones-simple text-xl text-white"></i>
+                </div>
+                <h1 class="text-xl font-bold">ZenithX</h1>
+            </div>
+            ${navItems.map(item => `
+                <button data-screen="${item.id}" class="${G_STATE.activeScreen === item.id ? 'primary-color bg-blue-100 dark:bg-blue-900/50' : 'text-color'} p-2 flex flex-col md:flex-row items-center md:space-x-3 w-1/4 md:w-full md:justify-start rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors duration-200">
+                    <i class="fas fa-${item.icon} text-lg"></i>
+                    <span class="text-xs md:text-base">${item.label}</span>
+                </button>
+            `).join('')}
+        `;
         nav.querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => showScreen(btn.dataset.screen)));
     }
     
@@ -480,6 +493,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- MODAL ---
     function openModal(video) {
         G_STATE.songForModal = video;
+        const modalContainer = document.getElementById('song-options-modal');
+        if (!modalContainer) return;
         modalContainer.classList.remove('hidden');
         modalContainer.innerHTML = `
             <div class="modal-backdrop"></div>
@@ -498,6 +513,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function closeModal() {
+        const modalContainer = document.getElementById('song-options-modal');
+        if (!modalContainer) return;
         modalContainer.classList.add('hidden');
         G_STATE.songForModal = null;
     }
