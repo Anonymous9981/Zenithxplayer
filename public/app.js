@@ -20,12 +20,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- AUTHENTICATION (NETLIFY IDENTITY) ---
     const identity = window.netlifyIdentity;
     if (identity) {
-        identity.on('init', user => { G_STATE.user = user; renderApp(); if (user) fetchUserData(); });
-        identity.on('login', user => { G_STATE.user = user; identity.close(); fetchUserData().then(renderApp); });
+        identity.on('init', user => {
+            G_STATE.user = user;
+            renderUI(); // Initial render based on login state
+            if (user) fetchUserData();
+        });
+        identity.on('login', user => {
+            G_STATE.user = user;
+            identity.close();
+            fetchUserData().then(renderUI); // Fetch data, then render the full app
+        });
         identity.on('logout', () => {
             if (G_STATE.ytPlayer && typeof G_STATE.ytPlayer.stopVideo === 'function') G_STATE.ytPlayer.stopVideo();
-            Object.assign(G_STATE, { user: null, queue: [], likedSongs: [], currentSongIndex: -1 });
-            renderApp();
+            // Reset state completely on logout
+            Object.assign(G_STATE, { user: null, queue: [], likedSongs: [], currentSongIndex: -1, activeScreen: 'home' });
+            renderUI(); // Render the login screen
         });
     }
 
@@ -47,7 +56,8 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("Error fetching user data:", error);
         } finally {
             G_STATE.isFetching = false;
-            renderApp();
+            // Re-render after fetching data to show user's playlists
+            if(G_STATE.user) showScreen(G_STATE.activeScreen);
         }
     }
 
@@ -68,10 +78,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- CORE APP RENDERING ---
-    function renderApp() {
-        renderFooter();
-        renderNav();
-        showScreen(G_STATE.activeScreen);
+    function renderUI() {
+        if (G_STATE.user) {
+            // User is logged in, show the full app
+            nav.classList.remove('hidden');
+            footer.classList.remove('hidden');
+            renderFooter();
+            renderNav();
+            showScreen('home'); // Always start on home screen after login
+        } else {
+            // User is logged out, show the login screen
+            nav.classList.add('hidden');
+            footer.classList.add('hidden');
+            mainContent.innerHTML = getLoginScreenHTML();
+            document.getElementById('login-button').addEventListener('click', () => identity.open());
+        }
     }
 
     // --- SCREEN MANAGEMENT & HTML TEMPLATES ---
@@ -86,6 +107,20 @@ document.addEventListener('DOMContentLoaded', () => {
         mainContent.innerHTML = templates[screenId] ? templates[screenId]() : `<h1>Not Found</h1>`;
         bindScreenEvents(screenId);
         renderNav();
+    }
+    
+    function getLoginScreenHTML() {
+        return `
+            <div class="flex flex-col items-center justify-center h-full text-center p-4">
+                <div class="w-24 h-24 rounded-3xl glass-logo flex items-center justify-center mb-6">
+                    <i class="fa-solid fa-headphones-simple text-5xl text-white"></i>
+                </div>
+                <h1 class="text-4xl font-bold mb-2">Welcome to ZenithX</h1>
+                <p class="text-lg opacity-70 mb-8">Your personal music streaming experience.</p>
+                <button id="login-button" class="w-full max-w-xs p-4 bg-primary text-white rounded-lg font-semibold hover:opacity-90 transition text-lg">
+                    Login / Sign Up
+                </button>
+            </div>`;
     }
 
     function getHomeScreenHTML() {
@@ -116,13 +151,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function getProfileScreenHTML() {
         const userEmail = G_STATE.user ? G_STATE.user.email : 'Not Logged In';
-        const buttonText = G_STATE.user ? 'Logout' : 'Login / Sign Up';
         return `
             <h1 class="text-2xl font-bold mb-6">Profile</h1>
             <div class="bg-card p-4 rounded-lg shadow-custom">
                 <p class="font-semibold">Current User:</p>
                 <p class="text-sm opacity-70 mb-4 truncate">${userEmail}</p>
-                <button id="login-logout-button" class="w-full p-3 bg-primary text-white rounded-lg font-semibold hover:opacity-90 transition">${buttonText}</button>
+                <button id="logout-button" class="w-full p-3 bg-red-500 text-white rounded-lg font-semibold hover:opacity-90 transition">Logout</button>
             </div>`;
     }
 
@@ -195,9 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (screenId === 'queue') renderQueue();
         if (screenId === 'liked') renderLikedSongs();
         if (screenId === 'profile') {
-            document.getElementById('login-logout-button').addEventListener('click', () => {
-                G_STATE.user ? identity.logout() : identity.open();
-            });
+            document.getElementById('logout-button').addEventListener('click', () => identity.logout());
         }
     }
 
@@ -275,9 +307,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const currentTime = G_STATE.ytPlayer.getCurrentTime();
             const duration = G_STATE.ytPlayer.getDuration();
             if (duration > 0) {
-                document.getElementById('progress-bar').style.width = (currentTime / duration) * 100 + '%';
-                document.getElementById('current-time').textContent = formatTime(currentTime);
-                document.getElementById('duration').textContent = formatTime(duration);
+                const progressBar = document.getElementById('progress-bar');
+                const currentTimeEl = document.getElementById('current-time');
+                const durationEl = document.getElementById('duration');
+                if (progressBar) progressBar.style.width = (currentTime / duration) * 100 + '%';
+                if (currentTimeEl) currentTimeEl.textContent = formatTime(currentTime);
+                if (durationEl) durationEl.textContent = formatTime(duration);
             }
         }
     }, 1000);
@@ -315,6 +350,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    async function searchRelated(videoId) {
+        try {
+            const response = await fetch(`/.netlify/functions/youtube?relatedToVideoId=${videoId}`);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const data = await response.json();
+            if (data.items && data.items.length > 0) {
+                const nextSong = data.items[0];
+                if (!G_STATE.queue.some(item => item.id.videoId === nextSong.id.videoId)) {
+                    G_STATE.queue.push(nextSong);
+                    saveData('queue');
+                }
+                const newIndex = G_STATE.queue.findIndex(item => item.id.videoId === nextSong.id.videoId);
+                playSong(nextSong, newIndex);
+            }
+        } catch (error) { console.error("Error fetching related video:", error); }
+    }
+
     function displaySearchResults(videos) {
         const resultsContainer = document.getElementById('search-results');
         if (!videos || videos.length === 0) {
@@ -323,13 +375,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         resultsContainer.innerHTML = videos.map(video => getSongItemHTML(video)).join('');
         resultsContainer.querySelectorAll('.song-item').forEach(item => {
-            item.querySelector('.song-info').addEventListener('click', () => handleSongClick(JSON.parse(item.dataset.video)));
-            item.querySelector('.options-btn').addEventListener('click', () => openModal(JSON.parse(item.dataset.video)));
+            const videoData = JSON.parse(item.dataset.video);
+            item.querySelector('.song-info').addEventListener('click', () => handleSongClick(videoData));
+            item.querySelector('.options-btn').addEventListener('click', () => openModal(videoData));
         });
     }
     
     function getSongItemHTML(video, context = 'search') {
-        const isLiked = G_STATE.likedSongs.some(s => s.id.videoId === video.id.videoId);
         return `
             <div class="song-item flex items-center p-2 bg-card rounded-lg shadow-custom" data-video='${JSON.stringify(video)}'>
                 <div class="song-info flex-grow flex items-center min-w-0 cursor-pointer">
@@ -339,7 +391,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         <p class="text-sm opacity-70 truncate">${video.snippet.channelTitle}</p>
                     </div>
                 </div>
-                ${context === 'liked' ? `<button class="like-btn-list p-2 text-pink-500"><i class="fas fa-heart"></i></button>` : ''}
                 ${context === 'queue' ? `<button class="remove-btn p-2 text-red-400 hover:text-red-600"><i class="fas fa-trash"></i></button>` : ''}
                 <button class="options-btn p-2 text-color opacity-60 hover:opacity-100"><i class="fas fa-ellipsis-v"></i></button>
             </div>`;
@@ -358,101 +409,4 @@ document.addEventListener('DOMContentLoaded', () => {
             G_STATE.queue.splice(newIndex, 0, video);
             playSong(video, newIndex);
             saveData('queue');
-            renderQueue();
-        }
-    }
-
-    
-    // --- QUEUE & LIKED SONGS ---
-    function renderQueue() {
-        const container = document.getElementById('queue-container');
-        if (!container) return;
-        if (G_STATE.queue.length === 0) {
-            container.innerHTML = `<p class="text-center opacity-70">Your queue is empty.</p>`;
-            return;
-        }
-        container.innerHTML = G_STATE.queue.map((video, index) => getSongItemHTML(video, 'queue')).join('');
-        container.querySelectorAll('.song-item').forEach((item, index) => {
-            item.querySelector('.song-info').addEventListener('click', () => playSong(JSON.parse(item.dataset.video), index));
-            item.querySelector('.remove-btn').addEventListener('click', () => removeFromQueue(index));
-        });
-    }
-
-    function removeFromQueue(index) {
-        G_STATE.queue.splice(index, 1);
-        if (index === G_STATE.currentSongIndex) {
-            G_STATE.ytPlayer.stopVideo();
-            G_STATE.currentSongIndex = -1;
-            renderFooter();
-        } else if (index < G_STATE.currentSongIndex) {
-            G_STATE.currentSongIndex--;
-        }
-        renderQueue();
-        saveData('queue');
-    }
-
-    function renderLikedSongs() {
-        const container = document.getElementById('liked-songs-container');
-        if (!container) return;
-        if (G_STATE.likedSongs.length === 0) {
-            container.innerHTML = `<p class="text-center opacity-70">You haven't liked any songs yet.</p>`;
-            return;
-        }
-        container.innerHTML = G_STATE.likedSongs.map(video => getSongItemHTML(video, 'liked')).join('');
-        container.querySelectorAll('.song-item').forEach(item => {
-            item.querySelector('.song-info').addEventListener('click', () => handleSongClick(JSON.parse(item.dataset.video)));
-            item.querySelector('.like-btn-list').addEventListener('click', () => toggleLike(JSON.parse(item.dataset.video)));
-        });
-    }
-
-    function toggleLike(video = null) {
-        const song = video || G_STATE.queue[G_STATE.currentSongIndex];
-        if (!song || !G_STATE.user) return;
-        const indexInLiked = G_STATE.likedSongs.findIndex(s => s.id.videoId === song.id.videoId);
-        if (indexInLiked !== -1) {
-            G_STATE.likedSongs.splice(indexInLiked, 1);
-        } else {
-            G_STATE.likedSongs.unshift(song);
-        }
-        saveData('likedSongs');
-        renderFooter();
-        if (G_STATE.activeScreen === 'liked') renderLikedSongs();
-    }
-
-    // --- MODAL ---
-    function openModal(video) {
-        G_STATE.songForModal = video;
-        modalContainer.classList.remove('hidden');
-        modalContainer.innerHTML = `
-            <div class="modal-backdrop"></div>
-            <div class="modal-content bg-card">
-                <h3 class="text-lg font-bold mb-4 truncate">${video.snippet.title}</h3>
-                <button id="modal-add-to-queue" class="w-full text-left p-3 rounded-lg hover:bg-border-color transition flex items-center space-x-3">
-                    <i class="fas fa-plus"></i><span>Add to Queue</span>
-                </button>
-                <button id="modal-cancel" class="w-full text-left p-3 mt-2 rounded-lg hover:bg-border-color transition flex items-center space-x-3">
-                    <i class="fas fa-times"></i><span>Cancel</span>
-                </button>
-            </div>`;
-        modalContainer.querySelector('.modal-backdrop').addEventListener('click', closeModal);
-        modalContainer.querySelector('#modal-cancel').addEventListener('click', closeModal);
-        modalContainer.querySelector('#modal-add-to-queue').addEventListener('click', addToQueue);
-    }
-
-    function closeModal() {
-        modalContainer.classList.add('hidden');
-        G_STATE.songForModal = null;
-    }
-
-    function addToQueue() {
-        if (G_STATE.songForModal && !G_STATE.queue.some(item => item.id.videoId === G_STATE.songForModal.id.videoId)) {
-            G_STATE.queue.push(G_STATE.songForModal);
-            saveData('queue');
-            if (G_STATE.activeScreen === 'queue') renderQueue();
-        }
-        closeModal();
-    }
-
-    // Initial call to render the application
-    renderApp();
-});
+            if (G_STATE.activeScreen 
