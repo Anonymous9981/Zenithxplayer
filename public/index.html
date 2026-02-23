@@ -22,8 +22,8 @@
         <!-- This will be populated by app.js -->
     </div>
 
-    <!-- Hidden YouTube Player -->
-    <div id="player" class="hidden"></div>
+    <!-- Hidden YouTube Player (kept off-screen to allow background audio) -->
+    <div id="player" style="width:1px;height:1px;position:absolute;left:-9999px;top:auto;overflow:hidden;" aria-hidden="true"></div>
 
     <!-- Main Application Logic -->
     <script src="/app.js"></script>

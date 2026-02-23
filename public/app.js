@@ -265,16 +265,26 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- PLAYER LOGIC ---
     window.onYouTubeIframeAPIReady = () => {
         G_STATE.ytPlayer = new YT.Player('player', {
-            height: '0', width: '0',
-            events: { 
+            height: '1',
+            width: '1',
+            playerVars: {
+                playsinline: 1,
+                controls: 0,
+                rel: 0,
+                modestbranding: 1
+            },
+            events: {
                 'onReady': onPlayerReady,
-                'onStateChange': onPlayerStateChange 
+                'onStateChange': onPlayerStateChange
             }
         });
     };
 
     function onPlayerReady(event) {
         G_STATE.isPlayerReady = true;
+        // Ensure iframe is configured for inline/background playback.
+        // Avoid auto-playing audio without a user gesture; if an autoplay
+        // attempt is made, callers should mute first to satisfy policies.
     }
 
     function onPlayerStateChange(event) {
