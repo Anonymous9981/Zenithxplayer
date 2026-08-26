@@ -2,6 +2,11 @@
   "name": "zenithx-player-functions",
   "version": "1.0.0",
   "description": "Dependencies for Netlify functions",
+  "scripts": {
+    "dev": "node dev-server.js",
+    "preview": "node dev-server.js",
+    "start": "node dev-server.js"
+  },
   "dependencies": {
     "firebase-admin": "^11.10.1",
     "node-fetch": "^2.6.7"
